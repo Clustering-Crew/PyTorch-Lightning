@@ -7,9 +7,22 @@ import torchvision.datasets as datasets
 import pytorch_lightning as pl
 import torchvision.transforms as T
 
-# Remarks
-# Add norm to the transform
 
+def is_valid_file(path):
+    valid_extensions = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"]
+    _, ext = os.path.splitext(path)
+
+    if ext.lower not in valid_extensions:
+        return False
+
+    try:
+        with Image.open(path) as img:
+            img.verify()
+            img.load()
+        return True
+    except Exception as e:
+        print(f"Invalid file: {path}, error - {e}")
+        return False
 
 # Custom PyTorch Lightning datamodule
 class LitDataModule(pl.LightningDataModule):
@@ -37,7 +50,7 @@ class LitDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         self.full_dataset = datasets.ImageFolder(
-            root=self.data_dir, transform=self.transform
+            root=self.data_dir, transform=self.transform, is_valid_file=is_valid_file
         )
 
         self.train_ds, self.val_ds, self.test_ds = random_split(
@@ -48,44 +61,7 @@ class LitDataModule(pl.LightningDataModule):
         return DataLoader(self.train_ds, shuffle=True, batch_size=self.batch)
 
     def val_dataloader(self):
-        DataLoader(self.train_ds, shuffle=False, batch_size=self.batch)
+        return DataLoader(self.train_ds, shuffle=False, batch_size=self.batch)
 
     def test_dataloader(self):
-        DataLoader(self.train_ds, shuffle=False, batch_size=self.batch)
-
-
-# class DatasetFromTrainTest(pl.LightningDataModule):
-#     def __init__(
-#         self,
-#         data_dir,
-#         input_shape,
-#         batch,
-#         val_split,
-#         transform=None,
-#     ):
-#         self.data_dir = data_dir
-#         self.train_dir = os.path.join(self.data_dir, "train")
-#         self.test_dir = os.path.join(self.data_dir, "test")
-#         self.batch = batch
-#         self.val_split = val_split
-
-#         # If no transform is provided then apply the default transform
-#         if transform is None:
-#             self.transform = T.Compose(
-#                 [T.Resize((input_shape, input_shape)), T.ToTensor()]
-#             )
-#         else:
-#             self.transform = transform
-
-#     def setup(self, stage):
-#         self.train_val_dataset = datasets.ImageFolder(
-#             root=self.train_dir, transform=self.transform
-#         )
-#         self.test_dataset = datasets.ImageFolder(
-#             root=self.test_dir, transform=self.transform
-#         )
-
-
-#         self.train_ds, self.val_ds,  = random_split(
-#             self.full_dataset, [0.7, 0.2, 0.1]
-#         )
+        return DataLoader(self.train_ds, shuffle=False, batch_size=self.batch)
