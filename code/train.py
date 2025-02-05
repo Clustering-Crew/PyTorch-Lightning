@@ -1,6 +1,8 @@
 import os
 import argparse
+from glob import glob
 import numpy as np
+from PIL import Image
 import torch
 import pytorch_lightning as pl
 from config import get_config
@@ -8,6 +10,25 @@ from dataset import LitDataModule
 from model import CustomModel
 from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.callbacks import RichProgressBar, EarlyStopping
+
+
+def dataset_sanity_check(data_dir):
+
+    valid_extensions = ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.bmp", "*.gif"]
+        
+    paths = []
+
+    for ext in valid_extensions:
+        pattern = os.path.join(data_dir, "**", ext)
+        paths.extend(glob(pattern, recursive=True))
+    
+    for path in paths:
+        try:
+            with Image.open(path) as img:
+                img.verify()
+        except Exception as e:
+            print(f"Error - {e}")
+            os.remove(path)
 
 
 def main():
@@ -18,6 +39,11 @@ def main():
     if not os.path.exists(save_dir):
         os.makedirs(os.path.join(save_dir, "plots"), exist_ok=True)
         os.makedirs(os.path.join(save_dir, "logs"), exist_ok=True)
+
+    # Do a dataset sanity check
+    print("Starting Dataset Sanity Check...")
+    dataset_sanity_check(opt.data_dir)
+    print("Ending Dataset Sanity Check...")
 
     # Load the Pytorch lightning datamodule
     datamodule = LitDataModule(

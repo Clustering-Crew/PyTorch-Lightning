@@ -6,7 +6,6 @@ import pytorch_lightning as pl
 from torchvision.models import resnet50, ResNet50_Weights
 from torchmetrics.classification import Accuracy, Precision, Recall, F1Score
 
-
 class CustomModel(pl.LightningModule):
     def __init__(self, num_classes, average, epochs, lr):
         super().__init__()
