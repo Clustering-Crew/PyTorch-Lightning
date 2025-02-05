@@ -13,15 +13,14 @@ from pytorch_lightning.callbacks import RichProgressBar, EarlyStopping
 
 
 def dataset_sanity_check(data_dir):
-
     valid_extensions = ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.bmp", "*.gif"]
-        
+
     paths = []
 
     for ext in valid_extensions:
         pattern = os.path.join(data_dir, "**", ext)
         paths.extend(glob(pattern, recursive=True))
-    
+
     for path in paths:
         try:
             with Image.open(path) as img:
@@ -32,6 +31,8 @@ def dataset_sanity_check(data_dir):
 
 
 def main():
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     opt = get_config()
 
     # Define and create the folder system to save the training and validation losses and curves.
@@ -77,6 +78,7 @@ def main():
         average=opt.average,
         epochs=opt.epochs,
         lr=opt.lr,
+        device=device
     )
 
     # Define the trainer

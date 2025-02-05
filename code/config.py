@@ -51,7 +51,7 @@ def get_config():
     parser.add_argument(
         "--tune", type=bool, help="True to perform hyperparameter tuning", default=False
     )
-
+    
     opt = parser.parse_args()
 
     return opt
