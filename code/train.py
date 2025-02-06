@@ -90,7 +90,7 @@ def main():
         trainer.tune()
 
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
-    trainer.test(test_loader)
+    trainer.test(model=model, dataloaders=test_loader)
 
 
 if __name__ == "__main__":

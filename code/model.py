@@ -13,7 +13,7 @@ class CustomModel(pl.LightningModule):
         self.lr = lr
         self.epochs = epochs
         self.num_classes = num_classes
-        self.device = device
+        self.d = device
         self.average = average  # Averaging technique
         self.task_type = "multiclass" if num_classes > 2 else "binary"
         self.accuracy = Accuracy(self.task_type, num_classes=self.num_classes)
@@ -44,17 +44,20 @@ class CustomModel(pl.LightningModule):
             nn.ReLU(),
             nn.Linear(64, self.num_classes),
         )
+        
+        # for name, param in self.model.named_parameters():
+        #     print(name, param.requires_grad)
 
     def forward(self, x):
-        x = self.model.forward(x)
-        return x
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        x, y = x.to(self.device).float(), y.to(self.device).float()
-        logits = self.forward(x)
+        x, y = x.to(self.d).type(torch.float32), y.to(self.d).type(torch.float32)
+        logits = self(x)
+        logits = torch.argmax(logits, dim=1).type(torch.float32)
         train_loss = self.loss_fn(logits, y)
-
+        train_loss.requires_grad = True
         self.log(
             name="train_loss",
             value=train_loss,
@@ -68,11 +71,12 @@ class CustomModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        x, y = x.to(self.device), y.to(self.device)
+        x, y = x.to(self.d).type(torch.float32), y.to(self.d).type(torch.float32)
 
-        logits = self.forward(x)
-        logits = torch.argmax(logits, dim=1)
+        logits = self(x)
+        logits = torch.argmax(logits, dim=1).type(torch.float32)
         val_loss = self.loss_fn(logits, y)
+        val_loss.requires_grad = True
         val_acc = self.accuracy(logits, y)
         val_precision = self.precision(logits, y)
         val_recall = self.recall(logits, y)
@@ -99,20 +103,19 @@ class CustomModel(pl.LightningModule):
         #     on_epoch=True,
         # )
 
-        return val_loss, val_accuracy, val_precision, val_recall
+        return val_loss, val_acc, val_precision, val_recall
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        x, y = x.to(self.device), y.to(self.device)
-        logits = self.forward(x)
-        logits = torch.argmax(logits, dim=1)
+        x, y = x.to(self.d).type(torch.float32), y.to(self.d).type(torch.float32)
+        logits = self(x)
+        logits = torch.argmax(logits, dim=1).type(torch.float32)
         test_acc = self.accuracy(logits, y)
         test_precision = self.precision(logits, y)
         test_recall = self.recall(logits, y)
 
         self.log_dict(
             {
-                "test_loss": test_loss,
                 "test_accuracy": test_acc,
                 "test_precisio": test_precision,
                 "test_recall": test_recall,
